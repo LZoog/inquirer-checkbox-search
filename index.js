@@ -1,16 +1,17 @@
 /**
  * `list` type prompt
  */
+
 var _ = require('lodash');
 var util = require('util');
 var chalk = require('chalk');
 var cliCursor = require('cli-cursor');
 var figures = require('figures');
-var Base = require('inquirer/lib/prompts/base');
-var Choices = require('inquirer/lib/objects/choices');
-var observe = require('inquirer/lib/utils/events');
+var Base = require('./base');
+var observe = require('../utils/events');
 var utils = require('inquirer/lib/utils/readline');
-var Paginator = require('inquirer/lib/utils/paginator');
+var Paginator = require('../utils/paginator');
+var Choices = require('inquirer/lib/objects/choices');
 
 /**
  * Module exports
@@ -77,9 +78,9 @@ Prompt.prototype._run = function (cb) {
 
   events.keypress.takeWhile(dontHaveAnswer).forEach(self.onKeypress.bind(this));
 
-    function dontHaveAnswer() {
-      return !self.answer;
-    }
+  function dontHaveAnswer() {
+    return !self.answer;
+  }
 
   //call once at init
   self.search(null);
@@ -96,6 +97,12 @@ Prompt.prototype.onKeypress = function(e) {
   var len;
   var keyName = (e.key && e.key.name) || undefined;
 
+  // this.lastPromise.then(function(result) {
+  //   console.log('result', result);
+  // })
+
+  var ctrlModifier = e.key.ctrl;
+
   if (keyName === 'tab' && this.opt.suggestOnly) {
     // if (this.currentChoices.getChoice(this.selected)) {
     //   this.rl.write(ansiEscapes.cursorLeft);
@@ -106,6 +113,7 @@ Prompt.prototype.onKeypress = function(e) {
     // }
   } else if (keyName === 'down') {
     len = this.currentChoices.length;
+
     this.selected = (this.selected < len - 1) ? this.selected + 1 : 0;
     this.ensureSelectedInRange();
     this.render();
@@ -114,6 +122,9 @@ Prompt.prototype.onKeypress = function(e) {
     len = this.currentChoices.length;
     this.selected = (this.selected > 0) ? this.selected - 1 : len - 1;
     this.ensureSelectedInRange();
+    this.render();
+  } else if (keyName === 'right') {
+    this.toggleChoice(this.selected);
     this.render();
   } else {
     this.render(); //render input automatically
@@ -171,7 +182,7 @@ Prompt.prototype.render = function (error) {
   var bottomContent = '';
 
   if (this.firstRender) {
-    message += '(Press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<a>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<i>') + ' to inverse selection)';
+    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<a>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<i>') + ' to inverse selection)';
   }
 
   // Render choices or answer depending on the state
@@ -234,25 +245,25 @@ Prompt.prototype.getCurrentValue = function () {
   return _.map(choices, 'value');
 };
 
-Prompt.prototype.onUpKey = function () {
-  var len = this.opt.choices.realLength;
-  this.pointer = (this.pointer > 0) ? this.pointer - 1 : len - 1;
-  this.render();
-};
+// Prompt.prototype.onUpKey = function () {
+//   var len = this.opt.choices.realLength;
+//   this.pointer = (this.pointer > 0) ? this.pointer - 1 : len - 1;
+//   this.render();
+// };
 
-Prompt.prototype.onDownKey = function () {
-  var len = this.opt.choices.realLength;
-  this.pointer = (this.pointer < len - 1) ? this.pointer + 1 : 0;
-  this.render();
-};
+// Prompt.prototype.onDownKey = function () {
+//   var len = this.opt.choices.realLength;
+//   this.pointer = (this.pointer < len - 1) ? this.pointer + 1 : 0;
+//   this.render();
+// };
 
-Prompt.prototype.onNumberKey = function (input) {
-  if (input <= this.opt.choices.realLength) {
-    this.pointer = input - 1;
-    this.toggleChoice(this.pointer);
-  }
-  this.render();
-};
+// Prompt.prototype.onNumberKey = function (input) {
+//   if (input <= this.opt.choices.realLength) {
+//     this.pointer = input - 1;
+//     this.toggleChoice(this.pointer);
+//   }
+//   this.render();
+// };
 
 Prompt.prototype.onSpaceKey = function () {
   this.toggleChoice(this.pointer);
@@ -284,10 +295,17 @@ Prompt.prototype.onInverseKey = function () {
 };
 
 Prompt.prototype.toggleChoice = function (index) {
-  var item = this.opt.choices.getChoice(index);
+  // console.log('index', index);
+  // var item = this.opt.choices.getChoice(index);
+  // if (item !== undefined) {
+  //   this.opt.choices.getChoice(index).checked = !item.checked;
+  // }
+  var item = this.currentChoices.choices[index];
   if (item !== undefined) {
-    this.opt.choices.getChoice(index).checked = !item.checked;
+    this.currentChoices.choices[index].checked = !item.checked;
   }
+
+  // console.log('this.currentChoices.choices[index]',this.currentChoices.choices[index]);
 };
 
 /**
