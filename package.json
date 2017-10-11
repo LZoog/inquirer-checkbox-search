@@ -1,0 +1,19 @@
+{
+  "name": "inquirer-checkbox-search",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LZoog/inquirer-checkbox-search.git"
+  },
+  "author": "Lauren Zugai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LZoog/inquirer-checkbox-search/issues"
+  },
+  "homepage": "https://github.com/LZoog/inquirer-checkbox-search#readme"
+}
