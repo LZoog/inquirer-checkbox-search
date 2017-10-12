@@ -370,6 +370,9 @@ function listRender(choices, pointer) {
     }
 
     var isSelected = (i - separatorOffset === pointer);
+    output += isSelected ? chalk.cyan(figures.pointer) : ' ';
+    output += getCheckbox(choice.checked) + '  ' + choice.name;
+
     var line = (isSelected ? figures.pointer + ' ' : '  ') + choice.name;
 
     if (isSelected) {
