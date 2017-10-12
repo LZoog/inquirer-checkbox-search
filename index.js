@@ -237,12 +237,12 @@ Prompt.prototype.onError = function (state) {
 };
 
 Prompt.prototype.getCurrentValue = function () {
-  var choices = this.opt.choices.filter(function (choice) {
-    return Boolean(choice.checked) && !choice.disabled;
-  });
+    var choices = this.currentChoices.filter(function (choice) {
+      return Boolean(choice.checked) && !choice.disabled;
+    });
 
-  this.selection = _.map(choices, 'short');
-  return _.map(choices, 'value');
+    this.selection = _.map(choices, 'short');
+    return _.map(choices, 'value');
 };
 
 // Prompt.prototype.onUpKey = function () {
@@ -371,14 +371,10 @@ function listRender(choices, pointer) {
 
     var isSelected = (i - separatorOffset === pointer);
     output += isSelected ? chalk.cyan(figures.pointer) : ' ';
-    output += getCheckbox(choice.checked) + '  ' + choice.name;
 
-    var line = (isSelected ? figures.pointer + ' ' : '  ') + choice.name;
+    output += getCheckbox(choice.checked) + '  ' + (choice.checked ? chalk.cyan(choice.name) : choice.name);
 
-    if (isSelected) {
-      line = chalk.cyan(line);
-    }
-    output += line + ' \n';
+    output += ' \n';
   });
 
   return output.replace(/\n$/, '');
