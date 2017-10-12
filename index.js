@@ -85,6 +85,16 @@ Prompt.prototype._run = function (cb) {
   //call once at init
   self.search(null);
 
+  // store initial choices in object to later be marked as 'checked'
+  this.lastPromise.then(function(choices) {
+    self.initialChoices = {};
+
+    for (var i = 0; i < choices.length; i++) {
+      self.initialChoices[choices[i]] = '';
+    }
+
+  })
+
   // Init the prompt
   // cliCursor.hide();
   // this.render();
@@ -96,6 +106,8 @@ Prompt.prototype._run = function (cb) {
 Prompt.prototype.onKeypress = function(e) {
   var len;
   var keyName = (e.key && e.key.name) || undefined;
+
+  console.log('onKeypress this.initialChoices',this.initialChoices);
 
   // this.lastPromise.then(function(result) {
   //   console.log('result', result);
@@ -127,7 +139,7 @@ Prompt.prototype.onKeypress = function(e) {
     this.toggleChoice(this.selected);
     this.render();
   } else {
-    this.render(); //render input automatically
+    // this.render(); //render input automatically
     //Only search if input have actually changed, not because of other keypresses
     if (this.lastSearchTerm !== this.rl.line) {
       this.search(this.rl.line); //trigger new search
@@ -161,7 +173,7 @@ Prompt.prototype.search = function(searchTerm) {
       return choice.type !== 'separator';
     }));
 
-    self.currentChoices = choices
+    self.currentChoices = choices;
     self.searching = false;
     self.render();
   });
@@ -295,17 +307,11 @@ Prompt.prototype.onInverseKey = function () {
 };
 
 Prompt.prototype.toggleChoice = function (index) {
-  // console.log('index', index);
-  // var item = this.opt.choices.getChoice(index);
-  // if (item !== undefined) {
-  //   this.opt.choices.getChoice(index).checked = !item.checked;
-  // }
   var item = this.currentChoices.choices[index];
   if (item !== undefined) {
     this.currentChoices.choices[index].checked = !item.checked;
   }
 
-  // console.log('this.currentChoices.choices[index]',this.currentChoices.choices[index]);
 };
 
 /**
