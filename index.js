@@ -86,21 +86,15 @@ Prompt.prototype._run = function (cb) {
   self.search(null);
 
   // store initial choices in object to be referenced with new searches
-  this.lastPromise.then(function(choices) {
-    // self.initialChoices = new Choices([]);
+  // this.lastPromise.then(function(choices) {
+  //   choices = new Choices(choices.filter(function(choice) {
+  //     return choice.type !== 'separator';
+  //   }));
 
-    // for (var i = 0; i < choices.length; i++) {
-    //   self.initialChoices[choices[i]] = {};
-    //   self.initialChoices[choices[i]].checked = false;
-    // }
+  //   self.initialChoices = choices;
 
-    choices = new Choices(choices.filter(function(choice) {
-      return choice.type !== 'separator';
-    }));
-
-    self.initialChoices = choices;
-
-  })
+  //   return self;
+  // })
 
   // Init the prompt
   // cliCursor.hide();
@@ -202,7 +196,12 @@ Prompt.prototype.render = function (error) {
 
   if (this.firstRender) {
     message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<a>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<i>') + ' to inverse selection)';
+
+    // store initial choices to be referenced with selections and new searches
+    this.initialChoices = this.currentChoices;
   }
+
+
 
   // Render choices or answer depending on the state
   // if (this.status === 'answered') {
@@ -219,7 +218,7 @@ Prompt.prototype.render = function (error) {
     message += this.rl.line;
     bottomContent += '  ' + chalk.dim('Searching...');
   } else if (this.currentChoices.length) {
-    var choicesStr = listRender(this.currentChoices, this.selected);
+    var choicesStr = listRender(this.currentChoices, this.initialChoices, this.selected);
     message += this.rl.line;
     bottomContent += this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
   } else {
@@ -378,21 +377,25 @@ function getCheckbox(checked) {
  * @param  {Number} pointer Position of the pointer
  * @return {String}         Rendered content
  */
-function listRender(choices, pointer) {
+function listRender(currentChoices, initialChoices, pointer) {
   var output = '';
   var separatorOffset = 0;
 
-  choices.forEach(function(choice, i) {
-    if (choice.type === 'separator') {
+  currentChoices.forEach(function(currentChoice, i) {
+    if (currentChoice.type === 'separator') {
       separatorOffset++;
-      output += '  ' + choice + '\n';
+      output += '  ' + currentChoice + '\n';
       return;
     }
 
     var isSelected = (i - separatorOffset === pointer);
     output += isSelected ? chalk.cyan(figures.pointer) : ' ';
 
-    output += getCheckbox(choice.checked) + '  ' + (choice.checked ? chalk.cyan(choice.name) : choice.name);
+    for (const initialChoice of initialChoices.choices) {
+      if (currentChoice.name === initialChoice.name) {
+        output += getCheckbox(initialChoice.checked) + '  ' + (initialChoice.checked ? chalk.cyan(initialChoice.name) : initialChoice.name);
+      }
+    }
 
     output += ' \n';
   });
