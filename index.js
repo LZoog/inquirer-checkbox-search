@@ -87,12 +87,18 @@ Prompt.prototype._run = function (cb) {
 
   // store initial choices in object to be referenced with new searches
   this.lastPromise.then(function(choices) {
-    self.initialChoices = {};
+    // self.initialChoices = new Choices([]);
 
-    for (var i = 0; i < choices.length; i++) {
-      self.initialChoices[choices[i]] = {};
-      self.initialChoices[choices[i]].checked = false;
-    }
+    // for (var i = 0; i < choices.length; i++) {
+    //   self.initialChoices[choices[i]] = {};
+    //   self.initialChoices[choices[i]].checked = false;
+    // }
+
+    choices = new Choices(choices.filter(function(choice) {
+      return choice.type !== 'separator';
+    }));
+
+    self.initialChoices = choices;
 
   })
 
@@ -250,12 +256,13 @@ Prompt.prototype.onError = function (state) {
 };
 
 Prompt.prototype.getCurrentValue = function () {
-    var choices = this.currentChoices.filter(function (choice) {
-      return Boolean(choice.checked) && !choice.disabled;
-    });
 
-    this.selection = _.map(choices, 'short');
-    return _.map(choices, 'value');
+  var choices = this.initialChoices.filter(function (choice) {
+    return Boolean(choice.checked) && !choice.disabled;
+  });
+
+  this.selection = _.map(choices, 'short');
+  return _.map(choices, 'value');
 };
 
 // Prompt.prototype.onUpKey = function () {
@@ -312,8 +319,10 @@ Prompt.prototype.toggleChoice = function (index) {
   if (item !== undefined) {
     this.currentChoices.choices[index].checked = !item.checked;
 
-    if (this.initialChoices.hasOwnProperty(item.name)) {
-      this.initialChoices[item.name].checked = item.checked;
+    for (const choice of this.initialChoices.choices) {
+      if (choice.name === item.name) {
+        choice.checked = item.checked;
+      }
     }
   }
 
