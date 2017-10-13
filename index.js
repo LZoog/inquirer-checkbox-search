@@ -108,13 +108,9 @@ Prompt.prototype.onKeypress = function(e) {
   var len;
   var keyName = (e.key && e.key.name) || undefined;
 
-  // console.log('onKeypress this.initialChoices',this.initialChoices);
+  const ctrlModifier = e.key.ctrl;
+  const shiftModifier = e.key.shift;
 
-  // this.lastPromise.then(function(result) {
-  //   console.log('result', result);
-  // })
-
-  var ctrlModifier = e.key.ctrl;
 
   if (keyName === 'tab' && this.opt.suggestOnly) {
     // if (this.currentChoices.getChoice(this.selected)) {
@@ -139,6 +135,10 @@ Prompt.prototype.onKeypress = function(e) {
   } else if (keyName === 'right') {
     this.toggleChoice(this.selected);
     this.render();
+  } else if (keyName === 'i' && ctrlModifier) {
+    this.onInverseKey();
+  } else if (keyName === 'a' && ctrlModifier) {
+    this.onAllKey();
   } else {
     // this.render(); //render input automatically
     //Only search if input have actually changed, not because of other keypresses
@@ -284,19 +284,27 @@ Prompt.prototype.getCurrentValue = function () {
 //   this.render();
 // };
 
-Prompt.prototype.onSpaceKey = function () {
-  this.toggleChoice(this.pointer);
-  this.render();
-};
+// Prompt.prototype.onSpaceKey = function () {
+//   this.toggleChoice(this.pointer);
+//   this.render();
+// };
 
 Prompt.prototype.onAllKey = function () {
-  var shouldBeChecked = Boolean(this.opt.choices.find(function (choice) {
+  const self = this;
+
+  var shouldBeChecked = Boolean(this.currentChoices.choices.find(function (choice) {
     return choice.type !== 'separator' && !choice.checked;
   }));
 
-  this.opt.choices.forEach(function (choice) {
-    if (choice.type !== 'separator') {
-      choice.checked = shouldBeChecked;
+  this.currentChoices.choices.forEach(function (currentChoice) {
+    if (currentChoice.type !== 'separator') {
+      currentChoice.checked = shouldBeChecked;
+
+      for (const initialChoice of self.initialChoices.choices) {
+        if (initialChoice.name === currentChoice.name) {
+          initialChoice.checked = currentChoice.checked;
+        }
+      }
     }
   });
 
@@ -369,7 +377,6 @@ function renderChoices(choices, pointer) {
 function getCheckbox(checked) {
   return checked ? chalk.green(figures.radioOn) : figures.radioOff;
 }
-
 
 
 /**
