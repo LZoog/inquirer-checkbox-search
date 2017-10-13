@@ -85,12 +85,13 @@ Prompt.prototype._run = function (cb) {
   //call once at init
   self.search(null);
 
-  // store initial choices in object to later be marked as 'checked'
+  // store initial choices in object to be referenced with new searches
   this.lastPromise.then(function(choices) {
     self.initialChoices = {};
 
     for (var i = 0; i < choices.length; i++) {
-      self.initialChoices[choices[i]] = '';
+      self.initialChoices[choices[i]] = {};
+      self.initialChoices[choices[i]].checked = false;
     }
 
   })
@@ -107,7 +108,7 @@ Prompt.prototype.onKeypress = function(e) {
   var len;
   var keyName = (e.key && e.key.name) || undefined;
 
-  console.log('onKeypress this.initialChoices',this.initialChoices);
+  // console.log('onKeypress this.initialChoices',this.initialChoices);
 
   // this.lastPromise.then(function(result) {
   //   console.log('result', result);
@@ -310,6 +311,10 @@ Prompt.prototype.toggleChoice = function (index) {
   var item = this.currentChoices.choices[index];
   if (item !== undefined) {
     this.currentChoices.choices[index].checked = !item.checked;
+
+    if (this.initialChoices.hasOwnProperty(item.name)) {
+      this.initialChoices[item.name].checked = item.checked;
+    }
   }
 
 };
