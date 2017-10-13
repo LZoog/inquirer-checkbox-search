@@ -85,21 +85,6 @@ Prompt.prototype._run = function (cb) {
   //call once at init
   self.search(null);
 
-  // store initial choices in object to be referenced with new searches
-  // this.lastPromise.then(function(choices) {
-  //   choices = new Choices(choices.filter(function(choice) {
-  //     return choice.type !== 'separator';
-  //   }));
-
-  //   self.initialChoices = choices;
-
-  //   return self;
-  // })
-
-  // Init the prompt
-  // cliCursor.hide();
-  // this.render();
-
   return this;
 };
 
@@ -122,7 +107,6 @@ Prompt.prototype.onKeypress = function(e) {
     // }
   } else if (keyName === 'down') {
     len = this.currentChoices.length;
-
     this.selected = (this.selected < len - 1) ? this.selected + 1 : 0;
     this.ensureSelectedInRange();
     this.render();
@@ -133,14 +117,18 @@ Prompt.prototype.onKeypress = function(e) {
     this.ensureSelectedInRange();
     this.render();
   } else if (keyName === 'right') {
-    this.toggleChoice(this.selected);
-    this.render();
-  } else if (keyName === 'i' && ctrlModifier) {
-    this.onInverseKey();
-  } else if (keyName === 'a' && ctrlModifier) {
-    this.onAllKey();
+    if (shiftModifier) {
+      this.onAllKey();
+      this.render();
+    } else if (ctrlModifier) {
+      this.onInverseKey();
+      this.render();
+    } else {
+      this.toggleChoice(this.selected);
+      this.render();
+    }
   } else {
-    // this.render(); //render input automatically
+    this.render(); //render input automatically
     //Only search if input have actually changed, not because of other keypresses
     if (this.lastSearchTerm !== this.rl.line) {
       this.search(this.rl.line); //trigger new search
@@ -195,7 +183,7 @@ Prompt.prototype.render = function (error) {
   var bottomContent = '';
 
   if (this.firstRender) {
-    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<a>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<i>') + ' to inverse selection)';
+    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)';
 
     // store initial choices to be referenced with selections and new searches
     this.initialChoices = this.currentChoices;
@@ -307,18 +295,22 @@ Prompt.prototype.onAllKey = function () {
       }
     }
   });
-
-  this.render();
 };
 
 Prompt.prototype.onInverseKey = function () {
-  this.opt.choices.forEach(function (choice) {
-    if (choice.type !== 'separator') {
-      choice.checked = !choice.checked;
+  const self = this;
+
+  this.currentChoices.choices.forEach(function (currentChoice) {
+    if (currentChoice.type !== 'separator') {
+      currentChoice.checked = !currentChoice.checked;
+
+      for (const initialChoice of self.initialChoices.choices) {
+        if (initialChoice.name === currentChoice.name) {
+          initialChoice.checked = currentChoice.checked;
+        }
+      }
     }
   });
-
-  this.render();
 };
 
 Prompt.prototype.toggleChoice = function (index) {
@@ -332,7 +324,6 @@ Prompt.prototype.toggleChoice = function (index) {
       }
     }
   }
-
 };
 
 /**
