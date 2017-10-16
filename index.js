@@ -280,6 +280,8 @@ Prompt.prototype.getCurrentValue = function () {
 Prompt.prototype.onAllKey = function () {
   const self = this;
 
+  console.log('all key');
+
   var shouldBeChecked = Boolean(this.currentChoices.choices.find(function (choice) {
     return choice.type !== 'separator' && !choice.checked;
   }));
@@ -306,7 +308,7 @@ Prompt.prototype.onInverseKey = function () {
 
       for (const initialChoice of self.initialChoices.choices) {
         if (initialChoice.name === currentChoice.name) {
-          initialChoice.checked = currentChoice.checked;
+          initialChoice.checked = !initialChoice.checked;
         }
       }
     }
@@ -314,13 +316,13 @@ Prompt.prototype.onInverseKey = function () {
 };
 
 Prompt.prototype.toggleChoice = function (index) {
-  var item = this.currentChoices.choices[index];
-  if (item !== undefined) {
-    this.currentChoices.choices[index].checked = !item.checked;
+  const currentChoice = this.currentChoices.choices[index];
+  if (currentChoice !== undefined) {
+    this.currentChoices.choices[index].checked = !currentChoice.checked;
 
-    for (const choice of this.initialChoices.choices) {
-      if (choice.name === item.name) {
-        choice.checked = item.checked;
+    for (const initialChoice of this.initialChoices.choices) {
+      if (initialChoice.name === currentChoice.name) {
+        initialChoice.checked = currentChoice.checked;
       }
     }
   }
@@ -332,32 +334,32 @@ Prompt.prototype.toggleChoice = function (index) {
  * @return {String}         Rendered content
  */
 
-function renderChoices(choices, pointer) {
-  var output = '';
-  var separatorOffset = 0;
+// function renderChoices(choices, pointer) {
+//   var output = '';
+//   var separatorOffset = 0;
 
-  choices.forEach(function (choice, i) {
-    if (choice.type === 'separator') {
-      separatorOffset++;
-      output += ' ' + choice + '\n';
-      return;
-    }
+//   choices.forEach(function (choice, i) {
+//     if (choice.type === 'separator') {
+//       separatorOffset++;
+//       output += ' ' + choice + '\n';
+//       return;
+//     }
 
-    if (choice.disabled) {
-      separatorOffset++;
-      output += ' - ' + choice.name;
-      output += ' (' + (_.isString(choice.disabled) ? choice.disabled : 'Disabled') + ')';
-    } else {
-      var isSelected = (i - separatorOffset === pointer);
-      output += isSelected ? chalk.cyan(figures.pointer) : ' ';
-      output += getCheckbox(choice.checked) + ' ' + choice.name;
-    }
+//     if (choice.disabled) {
+//       separatorOffset++;
+//       output += ' - ' + choice.name;
+//       output += ' (' + (_.isString(choice.disabled) ? choice.disabled : 'Disabled') + ')';
+//     } else {
+//       var isSelected = (i - separatorOffset === pointer);
+//       output += isSelected ? chalk.cyan(figures.pointer) : ' ';
+//       output += getCheckbox(choice.checked) + ' ' + choice.name;
+//     }
 
-    output += '\n';
-  });
+//     output += '\n';
+//   });
 
-  return output.replace(/\n$/, '');
-}
+//   return output.replace(/\n$/, '');
+// }
 
 /**
  * Get the checkbox
