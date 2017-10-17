@@ -1,6 +1,6 @@
 # inquirer-checkbox-search
 
-This is a prompt with user input search functionality made for [inquirer].(https://github.com/SBoudrias/Inquirer.js)
+This is a prompt with user input search functionality made for [inquirer](https://github.com/SBoudrias/Inquirer.js).
 
 Inspired by the checkbox prompt included in the inquirer core and [inquirer-autocomplete-prompt](https://github.com/mokkabonna/inquirer-autocomplete-prompt).
 
@@ -30,7 +30,7 @@ Change `checkbox-search` to whatever you prefer.
 
 This prompt is essentially a hybrid between [inquirer checkbox](https://github.com/SBoudrias/Inquirer.js#checkbox---type-checkbox) and [inquirer-autocomplete-prompt](https://github.com/mokkabonna/inquirer-autocomplete-prompt). See each Readme for available options, excluding **suggestOnly**.
 
-#### Example
+### Example
 
 ```javascript
 inquirer.registerPrompt('checkbox-search', require('inquirer-checkbox-search'))
