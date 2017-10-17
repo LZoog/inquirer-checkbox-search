@@ -7,10 +7,10 @@ const util = require('util')
 const chalk = require('chalk')
 const cliCursor = require('cli-cursor')
 const figures = require('figures')
-const Base = require('./base')
-const observe = require('../utils/events')
-const utils = require('inquirer/lib/utils/readline')
-const Paginator = require('../utils/paginator')
+const Base = require('inquirer/lib/prompts/base')
+const observe = require('inquirer/lib/utils/events')
+const readline = require('inquirer/lib/utils/readline')
+const Paginator = require('inquirer/lib/utils/paginator')
 const Choices = require('inquirer/lib/objects/choices')
 
 /**
@@ -119,7 +119,7 @@ Prompt.prototype.onKeypress = function(e) {
     this.selected = (this.selected < len - 1) ? this.selected + 1 : 0
     this.ensureSelectedInRange()
     this.render()
-    utils.up(this.rl, 2)
+    readline.up(this.rl, 2)
   } else if (keyName === 'up') {
     len = this.currentChoices.length
     this.selected = (this.selected > 0) ? this.selected - 1 : len - 1

@@ -1,7 +1,7 @@
 {
   "name": "inquirer-checkbox-search",
   "version": "1.0.0",
-  "description": "",
+  "description": "Checkbox prompt with filterable input for inquirer",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,5 +15,13 @@
   "bugs": {
     "url": "https://github.com/LZoog/inquirer-checkbox-search/issues"
   },
-  "homepage": "https://github.com/LZoog/inquirer-checkbox-search#readme"
+  "homepage": "https://github.com/LZoog/inquirer-checkbox-search#readme",
+  "dependencies": {
+    "chalk": "^2.1.0",
+    "cli-cursor": "^2.1.0",
+    "figures": "^2.0.0",
+    "inquirer": "^3.3.0",
+    "lodash": "^4.17.4",
+    "util": "^0.10.3"
+  }
 }
