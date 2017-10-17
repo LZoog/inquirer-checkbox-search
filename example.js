@@ -89,6 +89,6 @@ inquirer.prompt([{
   name: 'states',
   message: 'Which states would you like to visit?',
   source: filterStates
-}]).then((answers) => {
+}]).then(answers => {
   console.log(JSON.stringify(answers.states, null, 2))
 })
