@@ -77,18 +77,18 @@ function filterStates(answers, input) {
         if (!state.toLowerCase().includes(inputChunk.toLowerCase())) {
           shouldInclude = false
         }
-      });
+      })
 
       return shouldInclude
-    }));
-  });
+    }))
+  })
 }
 
 inquirer.prompt([{
   type: 'checkbox-search',
   name: 'states',
-  message: 'What states would you like to visit?',
+  message: 'Which states would you like to visit?',
   source: filterStates
-}]).then(function (answers) {
-  console.log(JSON.stringify(answers.states, null, 2));
+}]).then((answers) => {
+  console.log(JSON.stringify(answers.states, null, 2))
 })
