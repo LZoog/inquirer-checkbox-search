@@ -1,365 +1,260 @@
 /**
- * `list` type prompt
+ * `checkbox-search` type prompt
  */
 
-var _ = require('lodash');
-var util = require('util');
-var chalk = require('chalk');
-var cliCursor = require('cli-cursor');
-var figures = require('figures');
-var Base = require('./base');
-var observe = require('../utils/events');
-var utils = require('inquirer/lib/utils/readline');
-var Paginator = require('../utils/paginator');
-var Choices = require('inquirer/lib/objects/choices');
+var _ = require('lodash')
+var util = require('util')
+var chalk = require('chalk')
+var cliCursor = require('cli-cursor')
+var figures = require('figures')
+var Base = require('./base')
+var observe = require('../utils/events')
+var utils = require('inquirer/lib/utils/readline')
+var Paginator = require('../utils/paginator')
+var Choices = require('inquirer/lib/objects/choices')
 
 /**
  * Module exports
  */
-
-module.exports = Prompt;
+module.exports = Prompt
 
 /**
  * Constructor
  */
-
 function Prompt() {
-  Base.apply(this, arguments);
+  Base.apply(this, arguments)
 
   if (!this.opt.source) {
-    this.throwParamError('source');
+    this.throwParamError('source')
   }
 
-  // if (_.isArray(this.opt.default)) {
-  //   this.opt.choices.forEach(function (choice) {
-  //     if (this.opt.default.indexOf(choice.value) >= 0) {
-  //       choice.checked = true;
-  //     }
-  //   }, this);
-  // }
-
-  this.currentChoices = [];
-
-  this.pointer = 0;
-  this.firstRender = true;
+  this.currentChoices = []
+  this.firstRender = true
 
   // Make sure no default is set (so it won't be printed)
-  this.opt.default = null;
+  this.opt.default = null
 
-  this.paginator = new Paginator();
+  this.paginator = new Paginator()
 }
-util.inherits(Prompt, Base);
+util.inherits(Prompt, Base)
 
 /**
  * Start the Inquiry session
  * @param  {Function} cb      Callback when prompt is done
  * @return {this}
  */
-
 Prompt.prototype._run = function (cb) {
-  this.done = cb;
+  this.done = cb
+  const self = this
+  const events = observe(this.rl)
 
-  var self = this;
-
-  var events = observe(this.rl);
-
-  var validation = this.handleSubmitEvents(
+  const validation = this.handleSubmitEvents(
     events.line.map(this.getCurrentValue.bind(this))
-  );
-  validation.success.forEach(this.onEnd.bind(this));
-  validation.error.forEach(this.onError.bind(this));
+  )
+  validation.success.forEach(this.onEnd.bind(this))
+  validation.error.forEach(this.onError.bind(this))
 
-  // events.normalizedUpKey.takeUntil(validation.success).forEach(this.onUpKey.bind(this));
-  // events.normalizedDownKey.takeUntil(validation.success).forEach(this.onDownKey.bind(this));
-  // events.numberKey.takeUntil(validation.success).forEach(this.onNumberKey.bind(this));
-  // events.spaceKey.takeUntil(validation.success).forEach(this.onSpaceKey.bind(this));
-  // events.aKey.takeUntil(validation.success).forEach(this.onAllKey.bind(this));
-  // events.iKey.takeUntil(validation.success).forEach(this.onInverseKey.bind(this));
-
-  events.keypress.takeWhile(dontHaveAnswer).forEach(self.onKeypress.bind(this));
+  events.keypress.takeWhile(dontHaveAnswer).forEach(self.onKeypress.bind(this))
 
   function dontHaveAnswer() {
-    return !self.answer;
+    return !self.answer
   }
 
   //call once at init
-  self.search(null);
+  self.search(null)
 
-  return this;
-};
+  return this
+}
 
 
 Prompt.prototype.onKeypress = function(e) {
-  var len;
-  var keyName = (e.key && e.key.name) || undefined;
+  let len
+  const keyName = (e.key && e.key.name) || undefined
 
-  const ctrlModifier = e.key.ctrl;
-  const shiftModifier = e.key.shift;
+  const ctrlModifier = e.key.ctrl
+  const shiftModifier = e.key.shift
 
-
-  if (keyName === 'tab' && this.opt.suggestOnly) {
-    // if (this.currentChoices.getChoice(this.selected)) {
-    //   this.rl.write(ansiEscapes.cursorLeft);
-    //   var autoCompleted = this.currentChoices.getChoice(this.selected).value;
-    //   this.rl.write(ansiEscapes.cursorForward(autoCompleted.length));
-    //   this.rl.line = autoCompleted
-    //   this.render();
-    // }
-  } else if (keyName === 'down') {
-    len = this.currentChoices.length;
-    this.selected = (this.selected < len - 1) ? this.selected + 1 : 0;
-    this.ensureSelectedInRange();
-    this.render();
-    utils.up(this.rl, 2);
+  if (keyName === 'down') {
+    len = this.currentChoices.length
+    this.selected = (this.selected < len - 1) ? this.selected + 1 : 0
+    this.ensureSelectedInRange()
+    this.render()
+    utils.up(this.rl, 2)
   } else if (keyName === 'up') {
-    len = this.currentChoices.length;
-    this.selected = (this.selected > 0) ? this.selected - 1 : len - 1;
-    this.ensureSelectedInRange();
-    this.render();
+    len = this.currentChoices.length
+    this.selected = (this.selected > 0) ? this.selected - 1 : len - 1
+    this.ensureSelectedInRange()
+    this.render()
   } else if (keyName === 'right') {
     if (shiftModifier) {
-      this.onAllKey();
-      this.render();
+      this.onAllKey()
+      this.render()
     } else if (ctrlModifier) {
-      this.onInverseKey();
-      this.render();
+      this.onInverseKey()
+      this.render()
     } else {
-      this.toggleChoice(this.selected);
-      this.render();
+      this.toggleChoice(this.selected)
+      this.render()
     }
   } else {
-    this.render(); //render input automatically
+    this.render() //render input automatically
     //Only search if input have actually changed, not because of other keypresses
     if (this.lastSearchTerm !== this.rl.line) {
-      this.search(this.rl.line); //trigger new search
+      this.search(this.rl.line) //trigger new search
     }
   }
-};
+}
 Prompt.prototype.search = function(searchTerm) {
-  var self = this;
-  self.selected = 0;
+  const self = this
+  self.selected = 0
 
   //only render searching state after first time
   if (self.searchedOnce) {
-    self.searching = true;
-    self.currentChoices = new Choices([]);
-    self.render(); //now render current searching state
+    self.searching = true
+    self.currentChoices = new Choices([])
+    self.render() //now render current searching state
   } else {
-    self.searchedOnce = true;
+    self.searchedOnce = true
   }
 
-  self.lastSearchTerm = searchTerm;
-  var thisPromise = self.opt.source(self.answers, searchTerm);
+  self.lastSearchTerm = searchTerm
+  const thisPromise = self.opt.source(self.answers, searchTerm)
 
   //store this promise for check in the callback
-  self.lastPromise = thisPromise;
+  self.lastPromise = thisPromise
 
   return thisPromise.then(function inner(choices) {
     //if another search is triggered before the current search finishes, don't set results
-    if (thisPromise !== self.lastPromise) return;
+    if (thisPromise !== self.lastPromise) return
 
     choices = new Choices(choices.filter(function(choice) {
-      return choice.type !== 'separator';
-    }));
+      return choice.type !== 'separator'
+    }))
 
-    self.currentChoices = choices;
-    self.searching = false;
-    self.render();
-  });
-};
+    self.currentChoices = choices
+    self.searching = false
+    self.render()
+  })
+}
+
 Prompt.prototype.ensureSelectedInRange = function() {
-  var selectedIndex = Math.min(this.selected, this.currentChoices.length); //not above currentChoices length - 1
-  this.selected = Math.max(selectedIndex, 0); //not below 0
+  const selectedIndex = Math.min(this.selected, this.currentChoices.length) //not above currentChoices length - 1
+  this.selected = Math.max(selectedIndex, 0) //not below 0
 }
 
 /**
  * Render the prompt to screen
  * @return {Prompt} self
  */
-
 Prompt.prototype.render = function (error) {
   // Render question
-  var message = this.getQuestion();
-  var bottomContent = '';
+  var message = this.getQuestion()
+  var bottomContent = ''
 
   if (this.firstRender) {
-    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)';
+    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)'
 
     // store initial choices to be referenced with selections and new searches
-    this.initialChoices = this.currentChoices;
+    this.initialChoices = this.currentChoices
   }
 
-
-
-  // Render choices or answer depending on the state
-  // if (this.status === 'answered') {
-  //   message += chalk.cyan(this.selection.join(', '));
-  // } else {
-  //   var choicesStr = renderChoices(this.opt.choices, this.pointer);
-  //   var indexPosition = this.opt.choices.indexOf(this.opt.choices.getChoice(this.pointer));
-  //   message += '\n' + this.paginator.paginate(choicesStr, indexPosition, this.opt.pageSize);
-  // }
-
   if (this.status === 'answered') {
-    message += chalk.cyan(this.shortAnswer || this.answerName || this.answer);
+    message += chalk.cyan(this.shortAnswer || this.answerName || this.answer)
   } else if (this.searching) {
-    message += this.rl.line;
-    bottomContent += '  ' + chalk.dim('Searching...');
+    message += this.rl.line
+    bottomContent += '  ' + chalk.dim('Searching...')
   } else if (this.currentChoices.length) {
-    var choicesStr = listRender(this.currentChoices, this.initialChoices, this.selected);
-    message += this.rl.line;
-    bottomContent += this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize);
+    const choicesStr = listRender(this.initialChoices, this.currentChoices, this.selected)
+    message += this.rl.line
+    bottomContent += this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize)
   } else {
-    message += this.rl.line;
-    bottomContent += '  ' + chalk.yellow('No results...');
+    message += this.rl.line
+    bottomContent += '  ' + chalk.yellow('No results...')
   }
 
   if (error) {
-    bottomContent = chalk.red('>> ') + error;
+    bottomContent = chalk.red('>> ') + error
   }
 
-  this.firstRender = false;
+  this.firstRender = false
 
-  this.screen.render(message, bottomContent);
-};
+  this.screen.render(message, bottomContent)
+}
 
 /**
  * When user press `enter` key
  */
-
 Prompt.prototype.onEnd = function (state) {
-  this.status = 'answered';
+  this.status = 'answered'
 
   // Rerender prompt (and clean subline error)
-  this.render();
+  this.render()
 
-  this.screen.done();
-  cliCursor.show();
-  this.done(state.value);
-};
+  this.screen.done()
+  cliCursor.show()
+  this.done(state.value)
+}
 
 Prompt.prototype.onError = function (state) {
-  this.render(state.isValid);
-};
+  this.render(state.isValid)
+}
 
 Prompt.prototype.getCurrentValue = function () {
+  const choices = this.initialChoices.filter(function (choice) {
+    return Boolean(choice.checked) && !choice.disabled
+  })
 
-  var choices = this.initialChoices.filter(function (choice) {
-    return Boolean(choice.checked) && !choice.disabled;
-  });
+  this.selection = _.map(choices, 'short')
+  return _.map(choices, 'value')
+}
 
-  this.selection = _.map(choices, 'short');
-  return _.map(choices, 'value');
-};
-
-// Prompt.prototype.onUpKey = function () {
-//   var len = this.opt.choices.realLength;
-//   this.pointer = (this.pointer > 0) ? this.pointer - 1 : len - 1;
-//   this.render();
-// };
-
-// Prompt.prototype.onDownKey = function () {
-//   var len = this.opt.choices.realLength;
-//   this.pointer = (this.pointer < len - 1) ? this.pointer + 1 : 0;
-//   this.render();
-// };
-
-// Prompt.prototype.onNumberKey = function (input) {
-//   if (input <= this.opt.choices.realLength) {
-//     this.pointer = input - 1;
-//     this.toggleChoice(this.pointer);
-//   }
-//   this.render();
-// };
-
-// Prompt.prototype.onSpaceKey = function () {
-//   this.toggleChoice(this.pointer);
-//   this.render();
-// };
 
 Prompt.prototype.onAllKey = function () {
-  const self = this;
+  const self = this
 
-  console.log('all key');
-
-  var shouldBeChecked = Boolean(this.currentChoices.choices.find(function (choice) {
-    return choice.type !== 'separator' && !choice.checked;
-  }));
+  const shouldBeChecked = Boolean(this.currentChoices.choices.find(function (choice) {
+    return choice.type !== 'separator' && !choice.checked
+  }))
 
   this.currentChoices.choices.forEach(function (currentChoice) {
     if (currentChoice.type !== 'separator') {
-      currentChoice.checked = shouldBeChecked;
+      currentChoice.checked = shouldBeChecked
 
       for (const initialChoice of self.initialChoices.choices) {
         if (initialChoice.name === currentChoice.name) {
-          initialChoice.checked = currentChoice.checked;
+          initialChoice.checked = currentChoice.checked
         }
       }
     }
-  });
-};
+  })
+}
 
 Prompt.prototype.onInverseKey = function () {
-  const self = this;
+  var self = this
 
   this.currentChoices.choices.forEach(function (currentChoice) {
     if (currentChoice.type !== 'separator') {
-      currentChoice.checked = !currentChoice.checked;
 
       for (const initialChoice of self.initialChoices.choices) {
-        if (initialChoice.name === currentChoice.name) {
-          initialChoice.checked = !initialChoice.checked;
+        if (currentChoice.name === initialChoice.name) {
+          initialChoice.checked = !initialChoice.checked
         }
       }
     }
-  });
-};
+  })
+}
 
 Prompt.prototype.toggleChoice = function (index) {
-  const currentChoice = this.currentChoices.choices[index];
-  if (currentChoice !== undefined) {
-    this.currentChoices.choices[index].checked = !currentChoice.checked;
+  const currentChoice = this.currentChoices.choices[index]
 
+  if (currentChoice !== undefined) {
     for (const initialChoice of this.initialChoices.choices) {
-      if (initialChoice.name === currentChoice.name) {
-        initialChoice.checked = currentChoice.checked;
+      if (currentChoice.name === initialChoice.name) {
+        initialChoice.checked = !initialChoice.checked
       }
     }
   }
-};
-
-/**
- * Function for rendering checkbox choices
- * @param  {Number} pointer Position of the pointer
- * @return {String}         Rendered content
- */
-
-// function renderChoices(choices, pointer) {
-//   var output = '';
-//   var separatorOffset = 0;
-
-//   choices.forEach(function (choice, i) {
-//     if (choice.type === 'separator') {
-//       separatorOffset++;
-//       output += ' ' + choice + '\n';
-//       return;
-//     }
-
-//     if (choice.disabled) {
-//       separatorOffset++;
-//       output += ' - ' + choice.name;
-//       output += ' (' + (_.isString(choice.disabled) ? choice.disabled : 'Disabled') + ')';
-//     } else {
-//       var isSelected = (i - separatorOffset === pointer);
-//       output += isSelected ? chalk.cyan(figures.pointer) : ' ';
-//       output += getCheckbox(choice.checked) + ' ' + choice.name;
-//     }
-
-//     output += '\n';
-//   });
-
-//   return output.replace(/\n$/, '');
-// }
+}
 
 /**
  * Get the checkbox
@@ -368,7 +263,7 @@ Prompt.prototype.toggleChoice = function (index) {
  */
 
 function getCheckbox(checked) {
-  return checked ? chalk.green(figures.radioOn) : figures.radioOff;
+  return checked ? chalk.green(figures.radioOn) : figures.radioOff
 }
 
 
@@ -377,28 +272,28 @@ function getCheckbox(checked) {
  * @param  {Number} pointer Position of the pointer
  * @return {String}         Rendered content
  */
-function listRender(currentChoices, initialChoices, pointer) {
-  var output = '';
-  var separatorOffset = 0;
+function listRender(initialChoices, currentChoices, pointer) {
+  let output = ''
+  let separatorOffset = 0
 
   currentChoices.forEach(function(currentChoice, i) {
     if (currentChoice.type === 'separator') {
-      separatorOffset++;
-      output += '  ' + currentChoice + '\n';
-      return;
+      separatorOffset++
+      output += '  ' + currentChoice + '\n'
+      return
     }
 
-    var isSelected = (i - separatorOffset === pointer);
-    output += isSelected ? chalk.cyan(figures.pointer) : ' ';
+    const isSelected = (i - separatorOffset === pointer)
+    output += isSelected ? chalk.cyan(figures.pointer) : ' '
 
     for (const initialChoice of initialChoices.choices) {
       if (currentChoice.name === initialChoice.name) {
-        output += getCheckbox(initialChoice.checked) + '  ' + (initialChoice.checked ? chalk.cyan(initialChoice.name) : initialChoice.name);
+        output += getCheckbox(initialChoice.checked) + '  ' + (initialChoice.checked ? chalk.cyan(initialChoice.name) : initialChoice.name)
       }
     }
 
-    output += ' \n';
-  });
+    output += ' \n'
+  })
 
-  return output.replace(/\n$/, '');
+  return output.replace(/\n$/, '')
 }
