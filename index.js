@@ -2,16 +2,16 @@
  * `checkbox-search` type prompt
  */
 
-var _ = require('lodash')
-var util = require('util')
-var chalk = require('chalk')
-var cliCursor = require('cli-cursor')
-var figures = require('figures')
-var Base = require('./base')
-var observe = require('../utils/events')
-var utils = require('inquirer/lib/utils/readline')
-var Paginator = require('../utils/paginator')
-var Choices = require('inquirer/lib/objects/choices')
+const _ = require('lodash')
+const util = require('util')
+const chalk = require('chalk')
+const cliCursor = require('cli-cursor')
+const figures = require('figures')
+const Base = require('./base')
+const observe = require('../utils/events')
+const utils = require('inquirer/lib/utils/readline')
+const Paginator = require('../utils/paginator')
+const Choices = require('inquirer/lib/objects/choices')
 
 /**
  * Module exports
@@ -71,8 +71,8 @@ Prompt.prototype._run = function (cb) {
  */
 Prompt.prototype.render = function (error) {
   // Render question
-  var message = this.getQuestion()
-  var bottomContent = ''
+  let message = this.getQuestion()
+  let bottomContent = ''
 
   if (this.firstRender) {
     message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)'
@@ -214,7 +214,7 @@ Prompt.prototype.onAllKey = function () {
 }
 
 Prompt.prototype.onInverseKey = function () {
-  var self = this
+  const self = this
 
   this.currentChoices.choices.forEach(currentChoice => {
     if (currentChoice.type !== 'separator') {
