@@ -212,17 +212,23 @@ Prompt.prototype.getCurrentValue = function () {
 Prompt.prototype.onAllKey = function () {
   const self = this
 
-  const shouldBeChecked = Boolean(this.currentChoices.choices.find(function (choice) {
-    return choice.type !== 'separator' && !choice.checked
+  // return true if at least one currentChoice (from matching initialChoice) is not checked
+  const shouldBeChecked = Boolean(this.currentChoices.choices.find(function (currentChoice) {
+    if (currentChoice.type !== 'separator') {
+      for (const initialChoice of self.initialChoices.choices) {
+        if (initialChoice.name === currentChoice.name) {
+          return !initialChoice.checked
+        }
+      }
+    }
+    return false
   }))
 
   this.currentChoices.choices.forEach(function (currentChoice) {
     if (currentChoice.type !== 'separator') {
-      currentChoice.checked = shouldBeChecked
-
       for (const initialChoice of self.initialChoices.choices) {
         if (initialChoice.name === currentChoice.name) {
-          initialChoice.checked = currentChoice.checked
+          initialChoice.checked = shouldBeChecked
         }
       }
     }
@@ -234,8 +240,8 @@ Prompt.prototype.onInverseKey = function () {
 
   this.currentChoices.choices.forEach(function (currentChoice) {
     if (currentChoice.type !== 'separator') {
-
       for (const initialChoice of self.initialChoices.choices) {
+
         if (currentChoice.name === initialChoice.name) {
           initialChoice.checked = !initialChoice.checked
         }
@@ -249,6 +255,7 @@ Prompt.prototype.toggleChoice = function (index) {
 
   if (currentChoice !== undefined) {
     for (const initialChoice of this.initialChoices.choices) {
+
       if (currentChoice.name === initialChoice.name) {
         initialChoice.checked = !initialChoice.checked
       }
@@ -261,11 +268,9 @@ Prompt.prototype.toggleChoice = function (index) {
  * @param  {Boolean} checked - add a X or not to the checkbox
  * @return {String} Composited checkbox string
  */
-
 function getCheckbox(checked) {
   return checked ? chalk.green(figures.radioOn) : figures.radioOff
 }
-
 
 /**
  * Function for rendering list choices
