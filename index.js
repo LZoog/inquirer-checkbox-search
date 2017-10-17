@@ -62,11 +62,51 @@ Prompt.prototype._run = function (cb) {
 
   //call once at init
   self.search(null)
-
   return this
 }
 
+/**
+ * Render the prompt to screen
+ * @return {Prompt} self
+ */
+Prompt.prototype.render = function (error) {
+  // Render question
+  var message = this.getQuestion()
+  var bottomContent = ''
 
+  if (this.firstRender) {
+    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)'
+
+    // store initial choices to be referenced with selections and new searches
+    this.initialChoices = this.currentChoices
+  }
+
+  if (this.status === 'answered') {
+    message += chalk.cyan(this.shortAnswer || this.answerName || this.answer)
+  } else if (this.searching) {
+    message += this.rl.line
+    bottomContent += '  ' + chalk.dim('Searching...')
+  } else if (this.currentChoices.length) {
+    const choicesStr = renderCurrentChoices(this.initialChoices, this.currentChoices, this.selected)
+    message += this.rl.line
+    bottomContent += this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize)
+  } else {
+    message += this.rl.line
+    bottomContent += '  ' + chalk.yellow('No results...')
+  }
+
+  if (error) {
+    bottomContent = chalk.red('>> ') + error
+  }
+
+  this.firstRender = false
+  this.screen.render(message, bottomContent)
+}
+
+/**
+ * Capture all key presses
+ * @param  {Object} e     The fired event
+ */
 Prompt.prototype.onKeypress = function(e) {
   let len
   const keyName = (e.key && e.key.name) || undefined
@@ -98,12 +138,22 @@ Prompt.prototype.onKeypress = function(e) {
     }
   } else {
     this.render() //render input automatically
-    //Only search if input have actually changed, not because of other keypresses
+    // Only search if input has actually changed, not because of other keypresses
     if (this.lastSearchTerm !== this.rl.line) {
       this.search(this.rl.line) //trigger new search
     }
   }
 }
+
+Prompt.prototype.ensureSelectedInRange = function() {
+  const selectedIndex = Math.min(this.selected, this.currentChoices.length) //not above currentChoices length - 1
+  this.selected = Math.max(selectedIndex, 0) //not below 0
+}
+
+/**
+ * Create new this.currentChoices based on search term
+ * @param  {String} searchTerm     The string to filter by
+ */
 Prompt.prototype.search = function(searchTerm) {
   const self = this
   self.selected = 0
@@ -137,52 +187,61 @@ Prompt.prototype.search = function(searchTerm) {
   })
 }
 
-Prompt.prototype.ensureSelectedInRange = function() {
-  const selectedIndex = Math.min(this.selected, this.currentChoices.length) //not above currentChoices length - 1
-  this.selected = Math.max(selectedIndex, 0) //not below 0
+Prompt.prototype.onAllKey = function () {
+  const self = this
+
+  // return true if at least one currentChoice (from matching initialChoice) is not checked
+  const shouldBeChecked = Boolean(this.currentChoices.choices.find(currentChoice => {
+    if (currentChoice.type !== 'separator') {
+      for (const initialChoice of self.initialChoices.choices) {
+        if (initialChoice.name === currentChoice.name) {
+          return !initialChoice.checked
+        }
+      }
+    }
+    return false
+  }))
+
+  this.currentChoices.choices.forEach(currentChoice => {
+    if (currentChoice.type !== 'separator') {
+      for (const initialChoice of self.initialChoices.choices) {
+        if (initialChoice.name === currentChoice.name) {
+          initialChoice.checked = shouldBeChecked
+        }
+      }
+    }
+  })
+}
+
+Prompt.prototype.onInverseKey = function () {
+  var self = this
+
+  this.currentChoices.choices.forEach(currentChoice => {
+    if (currentChoice.type !== 'separator') {
+      for (const initialChoice of self.initialChoices.choices) {
+        if (currentChoice.name === initialChoice.name) {
+          initialChoice.checked = !initialChoice.checked
+        }
+      }
+    }
+  })
+}
+
+Prompt.prototype.toggleChoice = function (index) {
+  const currentChoice = this.currentChoices.choices[index]
+
+  if (currentChoice !== undefined) {
+    for (const initialChoice of this.initialChoices.choices) {
+
+      if (currentChoice.name === initialChoice.name) {
+        initialChoice.checked = !initialChoice.checked
+      }
+    }
+  }
 }
 
 /**
- * Render the prompt to screen
- * @return {Prompt} self
- */
-Prompt.prototype.render = function (error) {
-  // Render question
-  var message = this.getQuestion()
-  var bottomContent = ''
-
-  if (this.firstRender) {
-    message += '(Type to filter, press ' + chalk.cyan.bold('<right arrow>') + ' to select, ' + chalk.cyan.bold('<shift>') + '+' + chalk.cyan.bold('<right arrow>') + ' to toggle all, ' + chalk.cyan.bold('<ctrl>') + '+' + chalk.cyan.bold('<right arrow>') + ' to inverse selection)'
-
-    // store initial choices to be referenced with selections and new searches
-    this.initialChoices = this.currentChoices
-  }
-
-  if (this.status === 'answered') {
-    message += chalk.cyan(this.shortAnswer || this.answerName || this.answer)
-  } else if (this.searching) {
-    message += this.rl.line
-    bottomContent += '  ' + chalk.dim('Searching...')
-  } else if (this.currentChoices.length) {
-    const choicesStr = listRender(this.initialChoices, this.currentChoices, this.selected)
-    message += this.rl.line
-    bottomContent += this.paginator.paginate(choicesStr, this.selected, this.opt.pageSize)
-  } else {
-    message += this.rl.line
-    bottomContent += '  ' + chalk.yellow('No results...')
-  }
-
-  if (error) {
-    bottomContent = chalk.red('>> ') + error
-  }
-
-  this.firstRender = false
-
-  this.screen.render(message, bottomContent)
-}
-
-/**
- * When user press `enter` key
+ * When `enter` key is pressed
  */
 Prompt.prototype.onEnd = function (state) {
   this.status = 'answered'
@@ -208,61 +267,6 @@ Prompt.prototype.getCurrentValue = function () {
   return _.map(choices, 'value')
 }
 
-
-Prompt.prototype.onAllKey = function () {
-  const self = this
-
-  // return true if at least one currentChoice (from matching initialChoice) is not checked
-  const shouldBeChecked = Boolean(this.currentChoices.choices.find(function (currentChoice) {
-    if (currentChoice.type !== 'separator') {
-      for (const initialChoice of self.initialChoices.choices) {
-        if (initialChoice.name === currentChoice.name) {
-          return !initialChoice.checked
-        }
-      }
-    }
-    return false
-  }))
-
-  this.currentChoices.choices.forEach(function (currentChoice) {
-    if (currentChoice.type !== 'separator') {
-      for (const initialChoice of self.initialChoices.choices) {
-        if (initialChoice.name === currentChoice.name) {
-          initialChoice.checked = shouldBeChecked
-        }
-      }
-    }
-  })
-}
-
-Prompt.prototype.onInverseKey = function () {
-  var self = this
-
-  this.currentChoices.choices.forEach(function (currentChoice) {
-    if (currentChoice.type !== 'separator') {
-      for (const initialChoice of self.initialChoices.choices) {
-
-        if (currentChoice.name === initialChoice.name) {
-          initialChoice.checked = !initialChoice.checked
-        }
-      }
-    }
-  })
-}
-
-Prompt.prototype.toggleChoice = function (index) {
-  const currentChoice = this.currentChoices.choices[index]
-
-  if (currentChoice !== undefined) {
-    for (const initialChoice of this.initialChoices.choices) {
-
-      if (currentChoice.name === initialChoice.name) {
-        initialChoice.checked = !initialChoice.checked
-      }
-    }
-  }
-}
-
 /**
  * Get the checkbox
  * @param  {Boolean} checked - add a X or not to the checkbox
@@ -273,15 +277,17 @@ function getCheckbox(checked) {
 }
 
 /**
- * Function for rendering list choices
- * @param  {Number} pointer Position of the pointer
- * @return {String}         Rendered content
+ * Function for rendering current choices to screen
+ * @param  {Array} initialChoices   Initial choices from first render
+ * @param  {Array} currentChoices   Current choices to be displayed
+ * @param  {Number} pointer         Position of the pointer
+ * @return {String}                 Rendered content
  */
-function listRender(initialChoices, currentChoices, pointer) {
+function renderCurrentChoices(initialChoices, currentChoices, pointer) {
   let output = ''
   let separatorOffset = 0
 
-  currentChoices.forEach(function(currentChoice, i) {
+  currentChoices.forEach((currentChoice, i) => {
     if (currentChoice.type === 'separator') {
       separatorOffset++
       output += '  ' + currentChoice + '\n'
